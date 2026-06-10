@@ -8,8 +8,10 @@ import { DiffView } from "./components/DiffView";
 import { LivePulse } from "./components/LivePulse";
 import { ViewToggle, type ViewMode } from "./components/ViewToggle";
 import { ThemeToggle } from "./components/ThemeToggle";
+import { CompareSelect } from "./components/CompareSelect";
 
 const VIEW_KEY = "byediff.view";
+const BASE_KEY = "byediff.base";
 
 const RepoIcon = () => (
   <svg className="repo-icon" viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true">
@@ -35,14 +37,19 @@ export function App() {
     setViewModeState(m);
     localStorage.setItem(VIEW_KEY, m);
   }, []);
+  const [compareBase, setCompareBaseState] = useState<string>(() => localStorage.getItem(BASE_KEY) ?? "");
+  const setCompareBase = useCallback((b: string) => {
+    setCompareBaseState(b);
+    localStorage.setItem(BASE_KEY, b);
+  }, []);
   const [activePath, setActivePath] = useState<string | null>(null);
   const { mode, toggle } = useColorScheme();
   const sections = useRef<Record<string, HTMLDivElement | null>>({});
   const { highlight } = useHighlighter(mode);
 
   const refetchDiff = useCallback(() => {
-    api.diff().then(setDiff).catch(() => {});
-  }, []);
+    api.diff(compareBase || undefined).then(setDiff).catch(() => {});
+  }, [compareBase]);
   const refetchComments = useCallback(() => {
     api.comments().then(setComments).catch(() => {});
   }, []);
@@ -129,9 +136,12 @@ export function App() {
               {meta.branch}
             </span>
           )}
-          <span className="compare">
-            HEAD <span className="compare-arrow">↔</span> working tree
-          </span>
+          <CompareSelect
+            base={compareBase}
+            branches={meta?.branches ?? []}
+            branch={meta?.branch ?? ""}
+            onChange={setCompareBase}
+          />
         </span>
         <span className="topbar-spacer" />
         <span className="counts">
@@ -151,7 +161,11 @@ export function App() {
         <FileRail files={files} activePath={activePath} openCountByFile={openCountByFile} onSelect={select} />
         <main className="stage">
           {files.length === 0 ? (
-            <div className="empty">Working tree is clean — nothing to review.</div>
+            <div className="empty">
+              {compareBase
+                ? `No changes between ${compareBase} and ${meta?.branch ?? "HEAD"}.`
+                : "Working tree is clean — nothing to review."}
+            </div>
           ) : (
             files.map((file) => (
               <div

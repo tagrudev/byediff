@@ -82,6 +82,21 @@ export function currentBranch(repoPath: string): string | null {
   }
 }
 
+export function listBranches(repoPath: string): string[] {
+  try {
+    const out = git(repoPath, ["for-each-ref", "--format=%(refname:short)", "refs/heads"]);
+    const current = currentBranch(repoPath);
+    return out.split("\n").map((b) => b.trim()).filter((b) => b && b !== current);
+  } catch {
+    return [];
+  }
+}
+
+export function defaultBase(repoPath: string): string | null {
+  const branches = listBranches(repoPath);
+  return branches.find((b) => b === "master") ?? branches.find((b) => b === "main") ?? branches[0] ?? null;
+}
+
 function trackedDiff(repoPath: string): FileDiff[] {
   try {
     return parseDiff(git(repoPath, ["diff", "HEAD"]));
@@ -111,6 +126,13 @@ function untrackedDiffs(repoPath: string): FileDiff[] {
 
 export function computeDiff(repoPath: string): DiffModel {
   const files = [...trackedDiff(repoPath), ...untrackedDiffs(repoPath)].sort((a, b) =>
+    a.path.localeCompare(b.path),
+  );
+  return { branch: currentBranch(repoPath), files };
+}
+
+export function computeRangeDiff(repoPath: string, base: string): DiffModel {
+  const files = parseDiff(git(repoPath, ["diff", `${base}...HEAD`])).sort((a, b) =>
     a.path.localeCompare(b.path),
   );
   return { branch: currentBranch(repoPath), files };
