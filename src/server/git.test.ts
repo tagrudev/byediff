@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { parseDiff, buildUntrackedFileDiff, computeDiff } from "./git.js";
+import { parseDiff, buildUntrackedFileDiff, computeDiff, computeRangeDiff, listBranches, defaultBase } from "./git.js";
 
 const SAMPLE = `diff --git a/src/app.ts b/src/app.ts
 index 1111111..2222222 100644
@@ -100,5 +100,62 @@ describe("computeDiff (real git)", () => {
   it("returns an empty file list for a clean tree", () => {
     const model = computeDiff(repo);
     expect(model.files).toEqual([]);
+  });
+});
+
+describe("branch comparison (real git)", () => {
+  let repo: string;
+  let baseBranch: string;
+  const git = (...args: string[]) =>
+    execFileSync("git", args, { cwd: repo, encoding: "utf8" });
+
+  beforeEach(() => {
+    repo = mkdtempSync(join(tmpdir(), "byediff-range-"));
+    git("init", "-q");
+    git("config", "user.email", "t@example.com");
+    git("config", "user.name", "Test");
+    writeFileSync(join(repo, "base.txt"), "one\ntwo\nthree\n");
+    git("add", "-A");
+    git("commit", "-qm", "init");
+    baseBranch = git("rev-parse", "--abbrev-ref", "HEAD").trim();
+
+    git("checkout", "-qb", "feature");
+    writeFileSync(join(repo, "base.txt"), "one\nTWO\nthree\n");
+    git("add", "-A");
+    git("commit", "-qm", "feature change");
+
+    // a base-only commit after divergence — must NOT appear in a three-dot diff
+    git("checkout", "-q", baseBranch);
+    writeFileSync(join(repo, "base-only.txt"), "added on base\n");
+    git("add", "-A");
+    git("commit", "-qm", "base advances");
+    git("checkout", "-q", "feature");
+  });
+
+  afterEach(() => {
+    rmSync(repo, { recursive: true, force: true });
+  });
+
+  it("diffs the branch against the base using merge-base (three-dot)", () => {
+    const model = computeRangeDiff(repo, baseBranch);
+    const paths = model.files.map((f) => f.path);
+    expect(paths).toEqual(["base.txt"]);
+    expect(paths).not.toContain("base-only.txt");
+
+    const changed = model.files[0]!;
+    expect(changed.status).toBe("modified");
+    expect(changed.additions).toBe(1);
+    expect(changed.deletions).toBe(1);
+    expect(model.branch).toBe("feature");
+  });
+
+  it("lists local branches excluding the current branch", () => {
+    const branches = listBranches(repo);
+    expect(branches).toContain(baseBranch);
+    expect(branches).not.toContain("feature");
+  });
+
+  it("prefers master/main as the default base", () => {
+    expect(defaultBase(repo)).toBe(baseBranch);
   });
 });

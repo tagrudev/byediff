@@ -3,7 +3,7 @@ import type { Request, Response } from "express";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { computeDiff, currentBranch } from "./git.js";
+import { computeDiff, computeRangeDiff, currentBranch, listBranches, defaultBase } from "./git.js";
 import { CommentStore, type LineReader } from "./comments.js";
 import { watchRepo } from "./watcher.js";
 
@@ -46,11 +46,25 @@ export function createServer(repoPath: string): ServerHandle {
   };
 
   app.get("/api/meta", (_req, res) => {
-    res.json({ repoPath, branch: currentBranch(repoPath) });
+    res.json({
+      repoPath,
+      branch: currentBranch(repoPath),
+      branches: listBranches(repoPath),
+      defaultBase: defaultBase(repoPath),
+    });
   });
 
-  app.get("/api/diff", (_req, res) => {
-    res.json(computeDiff(repoPath));
+  app.get("/api/diff", (req, res) => {
+    const base = (req.query.base as string | undefined)?.trim();
+    if (!base) {
+      res.json(computeDiff(repoPath));
+      return;
+    }
+    if (!listBranches(repoPath).includes(base)) {
+      res.status(400).json({ error: `unknown branch: ${base}` });
+      return;
+    }
+    res.json(computeRangeDiff(repoPath, base));
   });
 
   app.get("/api/comments", (req, res) => {

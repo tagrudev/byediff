@@ -5,6 +5,8 @@ export type { DiffModel, Comment, FileDiff, Hunk, DiffLine } from "../server/typ
 export interface Meta {
   repoPath: string;
   branch: string | null;
+  branches: string[];
+  defaultBase: string | null;
 }
 
 async function json<T>(res: Response): Promise<T> {
@@ -14,7 +16,8 @@ async function json<T>(res: Response): Promise<T> {
 
 export const api = {
   meta: () => fetch("/api/meta").then(json<Meta>),
-  diff: () => fetch("/api/diff").then(json<DiffModel>),
+  diff: (base?: string) =>
+    fetch("/api/diff" + (base ? `?base=${encodeURIComponent(base)}` : "")).then(json<DiffModel>),
   comments: () => fetch("/api/comments").then(json<Comment[]>),
   addComment: (input: { file: string; line: number; body: string; anchorContent: string }) =>
     fetch("/api/comments", {
