@@ -1,9 +1,11 @@
 import express from "express";
 import type { Request, Response } from "express";
 import { readFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { computeDiff, computeRangeDiff, currentBranch, listBranches, defaultBase } from "./git.js";
+import { deleteNote, deleteRule, memoryPaths, readMemory } from "./memory.js";
 import { CommentStore, type LineReader } from "./comments.js";
 import { watchRepo } from "./watcher.js";
 
@@ -27,7 +29,7 @@ function workingLineReader(repoPath: string): LineReader {
   };
 }
 
-export function createServer(repoPath: string): ServerHandle {
+export function createServer(repoPath: string, home: string = homedir()): ServerHandle {
   const app = express();
   app.use(express.json({ limit: "4mb" }));
 
@@ -111,6 +113,31 @@ export function createServer(repoPath: string): ServerHandle {
     }
     broadcast("commentsChanged", { reason: "resolved" });
     res.json(resolved);
+  });
+
+  app.get("/api/memory", (_req, res) => {
+    res.json(readMemory(repoPath, home));
+  });
+
+  app.delete("/api/memory/rules/:source/:id", (req, res) => {
+    const file = memoryPaths(repoPath, home).ruleFiles.find((f) => f.source === req.params.source);
+    if (!file) {
+      res.status(404).json({ error: `no ${req.params.source} rule file` });
+      return;
+    }
+    if (!deleteRule(file.path, req.params.id)) {
+      res.status(409).json({ error: "that rule no longer matches the file on disk" });
+      return;
+    }
+    res.status(204).end();
+  });
+
+  app.delete("/api/memory/notes/:name", (req, res) => {
+    if (!deleteNote(memoryPaths(repoPath, home).notesDir, req.params.name)) {
+      res.status(404).json({ error: "not found" });
+      return;
+    }
+    res.status(204).end();
   });
 
   app.get("/api/events", (req, res) => {

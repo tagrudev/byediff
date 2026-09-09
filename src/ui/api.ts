@@ -1,6 +1,7 @@
-import type { DiffModel, Comment } from "../server/types";
+import type { DiffModel, Comment, MemoryModel, RuleSource } from "../server/types";
 
 export type { DiffModel, Comment, FileDiff, Hunk, DiffLine } from "../server/types";
+export type { MemoryModel, MemoryNote, Rule, RuleFile, RuleSection, RuleSource } from "../server/types";
 
 export interface Meta {
   repoPath: string;
@@ -12,6 +13,15 @@ export interface Meta {
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return res.json() as Promise<T>;
+}
+
+async function ok(res: Response): Promise<void> {
+  if (res.ok) return;
+  const reason = await res
+    .json()
+    .then((body: { error?: string }) => body.error)
+    .catch(() => null);
+  throw new Error(reason ?? `${res.status} ${res.statusText}`);
 }
 
 export const api = {
@@ -32,4 +42,9 @@ export const api = {
       body: JSON.stringify({ body }),
     }).then(json<Comment>),
   deleteComment: (id: string) => fetch(`/api/comments/${id}`, { method: "DELETE" }),
+  memory: () => fetch("/api/memory").then(json<MemoryModel>),
+  deleteRule: (source: RuleSource, id: string) =>
+    fetch(`/api/memory/rules/${source}/${id}`, { method: "DELETE" }).then(ok),
+  deleteNote: (name: string) =>
+    fetch(`/api/memory/notes/${encodeURIComponent(name)}`, { method: "DELETE" }).then(ok),
 };
