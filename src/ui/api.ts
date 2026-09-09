@@ -45,6 +45,6 @@ export const api = {
   memory: () => fetch("/api/memory").then(json<MemoryModel>),
   deleteRule: (source: RuleSource, id: string) =>
     fetch(`/api/memory/rules/${source}/${id}`, { method: "DELETE" }).then(ok),
-  deleteNote: (name: string) =>
-    fetch(`/api/memory/notes/${encodeURIComponent(name)}`, { method: "DELETE" }).then(ok),
+  deleteNote: (file: string) =>
+    fetch(`/api/memory/notes/${encodeURIComponent(file)}`, { method: "DELETE" }).then(ok),
 };

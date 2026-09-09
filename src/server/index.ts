@@ -132,8 +132,8 @@ export function createServer(repoPath: string, home: string = homedir()): Server
     res.status(204).end();
   });
 
-  app.delete("/api/memory/notes/:name", (req, res) => {
-    if (!deleteNote(memoryPaths(repoPath, home).notesDir, req.params.name)) {
+  app.delete("/api/memory/notes/:file", (req, res) => {
+    if (!deleteNote(memoryPaths(repoPath, home).notesDir, req.params.file)) {
       res.status(404).json({ error: "not found" });
       return;
     }

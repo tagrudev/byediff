@@ -118,9 +118,21 @@ Staging runs on fly.io. See [[release-checklist]].
 `,
     );
     writeFileSync(
+      join(notesDir, "release_checklist.md"),
+      `---
+name: Release checklist
+description: Tag, then deploy, then smoke-test
+metadata:
+  type: project
+---
+
+Tag the release first.
+`,
+    );
+    writeFileSync(
       join(notesDir, "MEMORY.md"),
       `- [Deploy target](deploy-target.md) — fly.io, not Heroku
-- [Release checklist](release-checklist.md) — the steps
+- [Release checklist](release_checklist.md) — the steps
 `,
     );
   });
@@ -135,14 +147,30 @@ Staging runs on fly.io. See [[release-checklist]].
     expect(memory.ruleFiles.map((f) => f.source)).toEqual(["global"]);
     expect(memory.ruleFiles[0]!.path).toBe(globalRules);
     expect(memory.notesDir).toBe(notesDir);
-    expect(memory.notes).toHaveLength(1);
+    expect(memory.notes).toHaveLength(2);
     expect(memory.notes[0]).toMatchObject({
+      file: "deploy-target.md",
       name: "deploy-target",
       description: "Staging deploys go through fly.io, not Heroku",
       type: "project",
     });
     expect(memory.notes[0]!.body).toContain("Staging runs on fly.io.");
     expect(memory.notes[0]!.body).not.toContain("---");
+  });
+
+  it("reports the file a note lives in, not just the name it calls itself", () => {
+    const note = readMemory(repo, home).notes.find((n) => n.name === "Release checklist")!;
+    expect(note.file).toBe("release_checklist.md");
+    expect(note.path).toBe(join(notesDir, "release_checklist.md"));
+  });
+
+  it("deletes a note whose name differs from its filename", () => {
+    const note = readMemory(repo, home).notes.find((n) => n.name === "Release checklist")!;
+    expect(deleteNote(notesDir, note.file)).toBe(true);
+    expect(existsSync(join(notesDir, "release_checklist.md"))).toBe(false);
+    expect(readFileSync(join(notesDir, "MEMORY.md"), "utf8")).toBe(
+      "- [Deploy target](deploy-target.md) — fly.io, not Heroku\n",
+    );
   });
 
   it("picks up a repo-local CLAUDE.md as the project rule file", () => {
@@ -216,22 +244,23 @@ Staging runs on fly.io. See [[release-checklist]].
   });
 
   it("deletes a note and prunes its pointer from MEMORY.md", () => {
-    expect(deleteNote(notesDir, "deploy-target")).toBe(true);
+    expect(deleteNote(notesDir, "deploy-target.md")).toBe(true);
     expect(existsSync(join(notesDir, "deploy-target.md"))).toBe(false);
     expect(readFileSync(join(notesDir, "MEMORY.md"), "utf8")).toBe(
-      "- [Release checklist](release-checklist.md) — the steps\n",
+      "- [Release checklist](release_checklist.md) — the steps\n",
     );
   });
 
   it("refuses to delete the MEMORY.md index or escape the memory directory", () => {
-    expect(deleteNote(notesDir, "MEMORY")).toBe(false);
-    expect(deleteNote(notesDir, "../../CLAUDE")).toBe(false);
+    expect(deleteNote(notesDir, "MEMORY.md")).toBe(false);
+    expect(deleteNote(notesDir, "../../CLAUDE.md")).toBe(false);
+    expect(deleteNote(notesDir, "../../../.claude/CLAUDE.md")).toBe(false);
     expect(existsSync(join(notesDir, "MEMORY.md"))).toBe(true);
     expect(existsSync(globalRules)).toBe(true);
   });
 
   it("refuses a note that does not exist", () => {
-    expect(deleteNote(notesDir, "never-written")).toBe(false);
+    expect(deleteNote(notesDir, "never-written.md")).toBe(false);
   });
 });
 

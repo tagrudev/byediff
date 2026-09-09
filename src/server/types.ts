@@ -76,6 +76,7 @@ export interface RuleFile {
 }
 
 export interface MemoryNote {
+  file: string;
   name: string;
   path: string;
   description: string;

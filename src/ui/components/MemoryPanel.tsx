@@ -67,6 +67,14 @@ export function MemoryPanel() {
 
   return (
     <div className="memory">
+      {error && (
+        <div className="mem-error" role="alert">
+          {error}
+          <button className="mem-error-close" onClick={() => setError(null)} aria-label="Dismiss">
+            ×
+          </button>
+        </div>
+      )}
       <div className="memory-inner">
         <header className="mem-intro">
           <h1>Claude memory</h1>
@@ -78,8 +86,6 @@ export function MemoryPanel() {
             <b>{ruleCount}</b> rules · <b>{memory.notes.length}</b> memories
           </p>
         </header>
-
-        {error && <div className="mem-error">{error}</div>}
 
         {memory.ruleFiles.map((file) => (
           <section className="mem-card" key={file.source}>
@@ -119,15 +125,16 @@ export function MemoryPanel() {
             <p className="mem-none">Claude hasn't stored anything about this repo yet.</p>
           ) : (
             memory.notes.map((note) => (
-              <article className="mem-note" key={note.name}>
+              <article className="mem-note" key={note.file}>
                 <div className="mem-note-head">
                   <b className="mem-note-name">{note.name}</b>
                   {note.type && <span className="mem-type">{note.type}</span>}
+                  <code className="mem-note-file">{note.file}</code>
                   <DeleteAction
-                    armed={armed === note.path}
-                    onArm={() => setArmed(note.path)}
+                    armed={armed === note.file}
+                    onArm={() => setArmed(note.file)}
                     onCancel={() => setArmed(null)}
-                    onConfirm={() => remove(api.deleteNote(note.name))}
+                    onConfirm={() => remove(api.deleteNote(note.file))}
                   />
                 </div>
                 {note.description && <p className="mem-desc">{note.description}</p>}

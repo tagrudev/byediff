@@ -15,7 +15,6 @@ const LIST_ITEM = /^\s*(?:[-*+]|\d+[.)])\s+/;
 const FENCE = /^\s*(```+|~~~+)/;
 const FRONTMATTER = /^---\n([\s\S]*?)\n---\n?/;
 const FIELD = /^\s*([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$/;
-const NOTE_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
 interface Block {
   id: string;
@@ -141,11 +140,20 @@ function frontmatterFields(raw: string): Record<string, string> {
   );
 }
 
+function noteFiles(dir: string): string[] {
+  try {
+    return readdirSync(dir).filter((file) => file.endsWith(".md") && file !== "MEMORY.md");
+  } catch {
+    return [];
+  }
+}
+
 function readNote(dir: string, file: string): MemoryNote {
   const path = join(dir, file);
   const raw = readFileSync(path, "utf8");
   const fields = frontmatterFields(raw);
   return {
+    file,
     name: fields.name ?? file.replace(/\.md$/, ""),
     path,
     description: fields.description ?? "",
@@ -155,14 +163,9 @@ function readNote(dir: string, file: string): MemoryNote {
 }
 
 function readNotes(dir: string): MemoryNote[] {
-  try {
-    return readdirSync(dir)
-      .filter((file) => file.endsWith(".md") && file !== "MEMORY.md")
-      .sort()
-      .map((file) => readNote(dir, file));
-  } catch {
-    return [];
-  }
+  return noteFiles(dir)
+    .sort()
+    .map((file) => readNote(dir, file));
 }
 
 export function readMemory(repoPath: string, home?: string): MemoryModel {
@@ -196,12 +199,11 @@ export function deleteRule(path: string, id: string): boolean {
   return true;
 }
 
-export function deleteNote(dir: string, name: string): boolean {
-  if (!NOTE_NAME.test(name) || name === "MEMORY") return false;
+export function deleteNote(dir: string, file: string): boolean {
+  if (!noteFiles(dir).includes(file)) return false;
 
-  const path = join(dir, `${name}.md`);
   try {
-    unlinkSync(path);
+    unlinkSync(join(dir, file));
   } catch {
     return false;
   }
@@ -209,7 +211,7 @@ export function deleteNote(dir: string, name: string): boolean {
   const indexPath = join(dir, "MEMORY.md");
   try {
     const lines = readFileSync(indexPath, "utf8").split("\n");
-    const kept = lines.filter((line) => !line.includes(`](${name}.md)`));
+    const kept = lines.filter((line) => !line.includes(`](${file})`));
     if (kept.length !== lines.length) writeFileSync(indexPath, kept.join("\n"));
   } catch {
     // no index to prune

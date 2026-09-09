@@ -186,10 +186,10 @@ describe("memory API (real http + real files)", () => {
     notesDir = join(home, ".claude", "projects", projectSlug(repo), "memory");
     mkdirSync(notesDir, { recursive: true });
     writeFileSync(
-      join(notesDir, "ports.md"),
-      "---\nname: ports\ndescription: Dev server runs on 4000\nmetadata:\n  type: project\n---\n\nThe dev server listens on 4000.\n",
+      join(notesDir, "dev_ports.md"),
+      "---\nname: Dev ports\ndescription: Dev server runs on 4000\nmetadata:\n  type: project\n---\n\nThe dev server listens on 4000.\n",
     );
-    writeFileSync(join(notesDir, "MEMORY.md"), "- [Ports](ports.md) — dev server on 4000\n");
+    writeFileSync(join(notesDir, "MEMORY.md"), "- [Ports](dev_ports.md) — dev server on 4000\n");
 
     handle = createServer(repo, home);
     server = createHttpServer(handle.app);
@@ -211,7 +211,8 @@ describe("memory API (real http + real files)", () => {
     expect(memory.ruleFiles).toHaveLength(1);
     expect(memory.ruleFiles[0].source).toBe("global");
     expect(memory.ruleFiles[0].sections[0].heading).toBe("Testing");
-    expect(memory.notes.map((n: { name: string }) => n.name)).toEqual(["ports"]);
+    expect(memory.notes.map((n: { name: string }) => n.name)).toEqual(["Dev ports"]);
+    expect(memory.notes.map((n: { file: string }) => n.file)).toEqual(["dev_ports.md"]);
   });
 
   it("deletes a rule and stops serving it", async () => {
@@ -239,8 +240,9 @@ describe("memory API (real http + real files)", () => {
     expect(res.status).toBe(404);
   });
 
-  it("deletes a note and prunes the index", async () => {
-    const res = await fetch(`${base}/api/memory/notes/ports`, { method: "DELETE" });
+  it("deletes a note addressed by its filename, not its display name", async () => {
+    const listed = await (await fetch(`${base}/api/memory`)).json();
+    const res = await fetch(`${base}/api/memory/notes/${listed.notes[0].file}`, { method: "DELETE" });
     expect(res.status).toBe(204);
     expect(readFileSync(join(notesDir, "MEMORY.md"), "utf8")).toBe("");
 
@@ -249,8 +251,8 @@ describe("memory API (real http + real files)", () => {
   });
 
   it("404s a note that is not there and refuses the index itself", async () => {
-    expect((await fetch(`${base}/api/memory/notes/nope`, { method: "DELETE" })).status).toBe(404);
-    expect((await fetch(`${base}/api/memory/notes/MEMORY`, { method: "DELETE" })).status).toBe(404);
+    expect((await fetch(`${base}/api/memory/notes/nope.md`, { method: "DELETE" })).status).toBe(404);
+    expect((await fetch(`${base}/api/memory/notes/MEMORY.md`, { method: "DELETE" })).status).toBe(404);
     expect(existsSync(join(notesDir, "MEMORY.md"))).toBe(true);
   });
 });
