@@ -55,3 +55,37 @@ export interface Comment {
   replies: Reply[];
   createdAt: string;
 }
+
+export type RuleSource = "global" | "project";
+
+export interface Rule {
+  id: string;
+  text: string;
+}
+
+export interface RuleSection {
+  heading: string | null;
+  level: number;
+  rules: Rule[];
+}
+
+export interface RuleFile {
+  source: RuleSource;
+  path: string;
+  sections: RuleSection[];
+}
+
+export interface MemoryNote {
+  file: string;
+  name: string;
+  path: string;
+  description: string;
+  type: string;
+  body: string;
+}
+
+export interface MemoryModel {
+  ruleFiles: RuleFile[];
+  notesDir: string;
+  notes: MemoryNote[];
+}

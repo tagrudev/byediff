@@ -712,3 +712,284 @@ tr.diffline:hover .code .add-btn {
   background: transparent !important;
   font-family: var(--mono);
 }
+
+/* ---------- topbar nav link ---------- */
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  color: var(--muted);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  padding: 0.3rem 0.6rem;
+}
+.nav-link:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.nav-link svg {
+  color: var(--faint);
+}
+.nav-link:hover svg {
+  color: var(--accent);
+}
+
+/* ---------- memory ---------- */
+.memory {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.75rem 1.5rem 6rem;
+}
+.memory.empty {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  padding: 3rem;
+  text-align: center;
+}
+.memory-inner {
+  max-width: 56rem;
+  margin: 0 auto;
+}
+
+.mem-intro h1 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.mem-intro p {
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.55;
+  max-width: 44rem;
+  margin-top: 0.4rem;
+}
+.mem-totals {
+  font-family: var(--mono);
+  font-size: 0.76rem;
+}
+.mem-totals b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.mem-error {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: min(40rem, calc(100vw - 3rem));
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, var(--border));
+  border-left: 3px solid var(--danger);
+  border-radius: 0.45rem;
+  background: var(--del-bg);
+  color: var(--text);
+  font-size: 0.82rem;
+  padding: 0.6rem 0.8rem;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.18);
+}
+.mem-error-close {
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+.mem-error-close:hover {
+  color: var(--danger);
+}
+
+.mem-card {
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--surface);
+  margin-top: 1.5rem;
+  overflow: hidden;
+}
+.mem-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--sunken);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.mem-badge {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.12rem 0.45rem;
+  border-radius: 2rem;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.mem-path {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  color: var(--faint);
+  word-break: break-all;
+}
+
+.mem-section {
+  border-top: 1px solid var(--hairline);
+}
+.mem-section:first-of-type {
+  border-top: 0;
+}
+.mem-heading {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--sunken);
+  padding: 0.45rem 0.9rem;
+  border-bottom: 1px solid var(--hairline);
+}
+.mem-heading[data-level="3"] {
+  padding-left: 1.9rem;
+  color: var(--faint);
+  letter-spacing: 0.06em;
+  text-transform: none;
+}
+
+.mem-rule {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  padding: 0.5rem 0.9rem;
+  border-top: 1px solid var(--hairline);
+}
+.mem-section > .mem-rule:first-of-type {
+  border-top: 0;
+}
+.mem-rule:hover {
+  background: var(--overlay-hover);
+}
+.mem-rule-text {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.mem-delete {
+  flex: 0 0 auto;
+  background: transparent;
+  border: 0;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0;
+}
+.mem-rule:hover .mem-delete,
+.mem-delete:focus-visible,
+.mem-note .mem-delete {
+  opacity: 1;
+}
+.mem-delete:hover {
+  color: var(--danger);
+  text-decoration: underline;
+}
+.mem-armed {
+  display: inline-flex;
+  gap: 0.7rem;
+  flex: 0 0 auto;
+}
+.mem-armed .mem-delete {
+  opacity: 1;
+}
+.mem-delete.confirm {
+  color: var(--danger);
+  font-weight: 600;
+}
+.mem-delete.cancel {
+  color: var(--muted);
+}
+.mem-delete.cancel:hover {
+  color: var(--accent);
+}
+
+.mem-none {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  padding: 1.25rem 0.9rem;
+}
+
+.mem-note {
+  padding: 0.7rem 0.9rem 0.8rem;
+  border-top: 1px solid var(--hairline);
+}
+.mem-note:first-of-type {
+  border-top: 0;
+}
+.mem-note-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.mem-note-name {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.mem-type {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-subtle);
+  border-radius: 2rem;
+  padding: 0.1rem 0.45rem;
+}
+.mem-note-file {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--faint);
+}
+.mem-note-head .mem-delete,
+.mem-note-head .mem-armed {
+  margin-left: auto;
+}
+.mem-desc {
+  color: var(--text);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin-top: 0.35rem;
+}
+.mem-note-body {
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  line-height: 1.6;
+  color: var(--muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-top: 0.5rem;
+  padding-left: 0.8rem;
+  border-left: 1px solid var(--border);
+  max-height: 14rem;
+  overflow-y: auto;
+}

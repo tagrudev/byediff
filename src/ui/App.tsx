@@ -9,6 +9,8 @@ import { LivePulse } from "./components/LivePulse";
 import { ViewToggle, type ViewMode } from "./components/ViewToggle";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { CompareSelect } from "./components/CompareSelect";
+import { MemoryPanel } from "./components/MemoryPanel";
+import { useHashRoute } from "./useHashRoute";
 
 const VIEW_KEY = "byediff.view";
 const BASE_KEY = "byediff.base";
@@ -22,6 +24,12 @@ const RepoIcon = () => (
 const BranchIcon = () => (
   <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true">
     <path d="M9.5 3.25a2.25 2.25 0 1 1 3 2.122V6A2.5 2.5 0 0 1 10 8.5H6a1 1 0 0 0-1 1v1.128a2.251 2.251 0 1 1-1.5 0V5.372a2.25 2.25 0 1 1 1.5 0v1.836A2.493 2.493 0 0 1 6 7h4a1 1 0 0 0 1-1v-.628A2.25 2.25 0 0 1 9.5 3.25Zm-6 0a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Zm8.25-.75a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5ZM4.25 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z" />
+  </svg>
+);
+
+const MemoryIcon = () => (
+  <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true">
+    <path d="M0 1.75A.75.75 0 0 1 .75 1h4.253c1.227 0 2.317.59 3 1.501A3.743 3.743 0 0 1 11.006 1h4.245a.75.75 0 0 1 .75.75v10.5a.75.75 0 0 1-.75.75h-4.507a2.25 2.25 0 0 0-1.591.659l-.622.621a.75.75 0 0 1-1.06 0l-.622-.621A2.25 2.25 0 0 0 5.258 13H.75a.75.75 0 0 1-.75-.75Zm7.251 10.324.004-5.073-.002-.006A2.25 2.25 0 0 0 5.003 4.5H1.5v7h3.757a3.75 3.75 0 0 1 1.994.574ZM8.755 4.75l-.004 7.322a3.752 3.752 0 0 1 1.992-.572H14.5v-7h-3.495a2.25 2.25 0 0 0-2.25 2.25Z" />
   </svg>
 );
 
@@ -43,6 +51,7 @@ export function App() {
     localStorage.setItem(BASE_KEY, b);
   }, []);
   const [activePath, setActivePath] = useState<string | null>(null);
+  const onMemory = useHashRoute() === "#/memory";
   const { mode, toggle } = useColorScheme();
   const sections = useRef<Record<string, HTMLDivElement | null>>({});
   const { highlight } = useHighlighter(mode);
@@ -81,6 +90,7 @@ export function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (onMemory) return;
       if (e.target instanceof HTMLTextAreaElement) return;
       if (e.key !== "j" && e.key !== "k") return;
       const idx = files.findIndex((f) => f.path === activePath);
@@ -90,7 +100,7 @@ export function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [files, activePath, select]);
+  }, [files, activePath, select, onMemory]);
 
   const commentsByFile = useMemo(() => {
     const map = new Map<string, Comment[]>();
@@ -136,58 +146,72 @@ export function App() {
               {meta.branch}
             </span>
           )}
-          <CompareSelect
-            base={compareBase}
-            branches={meta?.branches ?? []}
-            branch={meta?.branch ?? ""}
-            onChange={setCompareBase}
-          />
+          {!onMemory && (
+            <CompareSelect
+              base={compareBase}
+              branches={meta?.branches ?? []}
+              branch={meta?.branch ?? ""}
+              onChange={setCompareBase}
+            />
+          )}
         </span>
         <span className="topbar-spacer" />
-        <span className="counts">
-          <span>
-            <b>{files.length}</b> files
-          </span>
-          <span>
-            <b>{openCount}</b> open
-          </span>
-        </span>
-        <ViewToggle mode={viewMode} onChange={setViewMode} />
+        {!onMemory && (
+          <>
+            <span className="counts">
+              <span>
+                <b>{files.length}</b> files
+              </span>
+              <span>
+                <b>{openCount}</b> open
+              </span>
+            </span>
+            <ViewToggle mode={viewMode} onChange={setViewMode} />
+          </>
+        )}
+        <a className="nav-link" href={onMemory ? "#/" : "#/memory"}>
+          <MemoryIcon />
+          {onMemory ? "back to diff" : "memory"}
+        </a>
         <ThemeToggle mode={mode} onToggle={toggle} />
         <LivePulse live={live} />
       </header>
 
-      <div className="body">
-        <FileRail files={files} activePath={activePath} openCountByFile={openCountByFile} onSelect={select} />
-        <main className="stage">
-          {files.length === 0 ? (
-            <div className="empty">
-              {compareBase
-                ? `No changes between ${compareBase} and ${meta?.branch ?? "HEAD"}.`
-                : "Working tree is clean — nothing to review."}
-            </div>
-          ) : (
-            files.map((file) => (
-              <div
-                key={file.path}
-                ref={(el) => {
-                  sections.current[file.path] = el;
-                }}
-              >
-                <DiffView
-                  file={file}
-                  viewMode={viewMode}
-                  comments={commentsByFile.get(file.path) ?? []}
-                  highlight={highlight}
-                  onAdd={addComment(file.path)}
-                  onEdit={editComment}
-                  onDelete={deleteComment}
-                />
+      {onMemory ? (
+        <MemoryPanel />
+      ) : (
+        <div className="body">
+          <FileRail files={files} activePath={activePath} openCountByFile={openCountByFile} onSelect={select} />
+          <main className="stage">
+            {files.length === 0 ? (
+              <div className="empty">
+                {compareBase
+                  ? `No changes between ${compareBase} and ${meta?.branch ?? "HEAD"}.`
+                  : "Working tree is clean — nothing to review."}
               </div>
-            ))
-          )}
-        </main>
-      </div>
+            ) : (
+              files.map((file) => (
+                <div
+                  key={file.path}
+                  ref={(el) => {
+                    sections.current[file.path] = el;
+                  }}
+                >
+                  <DiffView
+                    file={file}
+                    viewMode={viewMode}
+                    comments={commentsByFile.get(file.path) ?? []}
+                    highlight={highlight}
+                    onAdd={addComment(file.path)}
+                    onEdit={editComment}
+                    onDelete={deleteComment}
+                  />
+                </div>
+              ))
+            )}
+          </main>
+        </div>
+      )}
     </div>
   );
 }

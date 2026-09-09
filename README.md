@@ -14,6 +14,9 @@ agent resolve them.
   changes, and replies on each one. It never commits — you re-review and commit.
 - Comments that drift after edits are flagged **stale** instead of pointing at the
   wrong line.
+- **Memory** — the `memory` link in the top bar lists the rules Claude loads into
+  every session and the facts it has written down about this repo, and deletes any
+  of them. See below.
 - **GitHub look** — matches GitHub's light/dark color scheme and follows your
   system theme, with a toggle in the top bar. Split/unified view is remembered.
 
@@ -62,6 +65,24 @@ your open comments, makes the changes, and replies on each. The browser updates
 live and the comments flip to **resolved**. Your tree is left dirty so you can
 re-review before committing.
 
+## Manage Claude's memory
+
+The `memory` link (or `#/memory`) opens everything Claude carries into a session
+for this repo:
+
+- **Rules** — `~/.claude/CLAUDE.md`, plus `CLAUDE.md` or `.claude/CLAUDE.md` from the
+  repo if either exists. Each one is broken into the units you'd call a rule: a
+  bullet with everything nested under it, a paragraph, or a fenced code block,
+  grouped under the heading it sits below.
+- **Memories** — the notes Claude writes to
+  `~/.claude/projects/<slug>/memory/`, with their type and description.
+
+Deleting edits the file on disk, so every delete takes a second click to confirm and
+there is no undo. A rule is identified by its content and position, so if you edit
+`CLAUDE.md` in your editor while the page is open, the stale delete is refused
+instead of taking out the wrong rule — reload and try again. Deleting a memory also
+prunes its pointer from `MEMORY.md`; the index itself can't be deleted.
+
 ## Attach to a tmuxinator project
 
 Add one window to any `~/.config/tmuxinator/<project>.yml`:
@@ -82,7 +103,8 @@ byediff (CLI)                         /byediff (Claude Code skill)
   ├─ git diff HEAD + untracked          ├─ read ~/.config/byediff/instances.json
   ├─ native fs.watch → SSE              ├─ GET open comments for this repo
   ├─ in-memory comments + stale         ├─ apply each change
-  └─ React UI (served on $PORT)         └─ POST resolve + reply (no commit)
+  ├─ CLAUDE.md rules + memory notes     └─ POST resolve + reply (no commit)
+  └─ React UI (served on $PORT)
 ```
 
 ## Develop
